@@ -42,11 +42,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
+          cache: 'gradle'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Install dependencies
+      - name: Install npm dependencies
         run: npm install
 
       - name: Build Web Application
