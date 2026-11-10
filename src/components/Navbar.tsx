@@ -1,8 +1,8 @@
 import React from 'react';
-import { LayoutDashboard, Crosshair, BrainCircuit, BookOpen, Bot, Settings, RefreshCw, Zap, Shield, Flame } from 'lucide-react';
+import { LayoutDashboard, Crosshair, BrainCircuit, Bot, Settings, RefreshCw, Zap, Shield, Flame, GitFork } from 'lucide-react';
 import type { ChessComProfile } from '../types/chess';
 
-export type ActiveTab = 'dashboard' | 'inspector' | 'dojo' | 'repertoire' | 'sparring';
+export type ActiveTab = 'repertoire' | 'dashboard' | 'inspector' | 'dojo' | 'sparring';
 
 interface NavbarProps {
   profile: ChessComProfile | null;
@@ -36,10 +36,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-white text-base tracking-wide">CHESS GRANDMASTER</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  AI Coach
+                  Radar de Fugas
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-mono">Stockfish 17 + Gemini Studio</p>
+              <p className="text-[11px] text-slate-400 font-mono">1. d4 & Siciliana • Stockfish 17 • Gemini</p>
             </div>
           </div>
 
@@ -86,6 +86,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Tab Switcher */}
         <nav className="flex items-center gap-1 bg-[#0f141c] p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
           <button
+            onClick={() => onTabChange('repertoire')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shrink-0 ${
+              activeTab === 'repertoire'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <GitFork size={14} />
+            <span>Árbol & Fugas</span>
+          </button>
+
+          <button
             onClick={() => onTabChange('dashboard')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shrink-0 ${
               activeTab === 'dashboard'
@@ -127,18 +139,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
-            onClick={() => onTabChange('repertoire')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shrink-0 ${
-              activeTab === 'repertoire'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <BookOpen size={14} />
-            <span>Aperturas</span>
-          </button>
-
-          <button
             onClick={() => onTabChange('sparring')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shrink-0 ${
               activeTab === 'sparring'
@@ -147,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Bot size={14} />
-            <span>Sparring IA</span>
+            <span>Adiestramiento</span>
           </button>
         </nav>
 

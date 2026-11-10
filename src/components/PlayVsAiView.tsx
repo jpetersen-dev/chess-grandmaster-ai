@@ -1,22 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
-import { Bot, RotateCcw, Sparkles, Undo2, Swords } from 'lucide-react';
+import { Bot, RotateCcw, Sparkles, Undo2, Swords, ShieldAlert } from 'lucide-react';
 import { analyzePosition } from '../services/stockfish';
 import { soundService } from '../services/soundService';
 
 interface PlayVsAiViewProps {
   initialFen?: string;
+  initialColor?: 'white' | 'black';
+  lineName?: string;
+  onClearLine?: () => void;
 }
 
-export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
+export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({
+  initialFen,
+  initialColor = 'white',
+  lineName,
+  onClearLine,
+}) => {
   const [game, setGame] = useState<Chess>(new Chess(initialFen || undefined));
   const [fen, setFen] = useState<string>(initialFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
-  const [playerColor] = useState<'white' | 'black'>('white');
+  const [playerColor, setPlayerColor] = useState<'white' | 'black'>(initialColor);
   const [difficulty, setDifficulty] = useState<number>(800);
   const [hint, setHint] = useState<string>('');
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
   const [gameStatus, setGameStatus] = useState<string>('');
+
+  useEffect(() => {
+    if (initialFen) {
+      const g = new Chess(initialFen);
+      setGame(g);
+      setFen(g.fen());
+      setPlayerColor(initialColor);
+      setHint('');
+      setGameStatus('');
+    }
+  }, [initialFen, initialColor]);
 
   const isPlayerTurn = (game.turn() === 'w' && playerColor === 'white') || (game.turn() === 'b' && playerColor === 'black');
 
@@ -32,9 +51,8 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
           const moves = game.moves({ verbose: true });
           if (moves.length === 0) return;
 
-          // Occasionally make a slight mistake on lower Elos
           let chosenMove = moves[0];
-          if (difficulty <= 800 && Math.random() < 0.4) {
+          if (difficulty <= 800 && Math.random() < 0.35) {
             chosenMove = moves[Math.floor(Math.random() * moves.length)];
           } else if (result.bestMoveUci) {
             const match = moves.find(
@@ -55,10 +73,10 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
 
           if (game.isGameOver()) {
             if (game.isCheckmate()) {
-              setGameStatus('¡Jaque mate! La IA ha ganado.');
+              setGameStatus('¡Jaque mate! La máquina ha ganado.');
               soundService.playError();
             } else {
-              setGameStatus('Tablas.');
+              setGameStatus('Partida finalizada en tablas.');
             }
           }
         } catch {
@@ -97,7 +115,7 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
 
       if (game.isGameOver()) {
         if (game.isCheckmate()) {
-          setGameStatus('¡Felicidades! ¡Has ganado por Jaque Mate!');
+          setGameStatus('¡Victoria! ¡Has ganado por Jaque Mate!');
           soundService.playSuccess();
         } else {
           setGameStatus('Partida finalizada en tablas.');
@@ -111,7 +129,7 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
   };
 
   const handleResetGame = () => {
-    const newGame = new Chess();
+    const newGame = new Chess(initialFen || undefined);
     setGame(newGame);
     setFen(newGame.fen());
     setHint('');
@@ -119,8 +137,8 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
   };
 
   const handleUndo = () => {
-    game.undo(); // Undo AI move
-    game.undo(); // Undo user move
+    game.undo();
+    game.undo();
     setFen(game.fen());
     setHint('');
     setGameStatus('');
@@ -129,60 +147,83 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
   const handleGetHint = async () => {
     const evalRes = await analyzePosition(game.fen(), 8);
     if (evalRes.bestMoveSan) {
-      setHint(`Pista de Gran Maestro: Considera la jugada ${evalRes.bestMoveSan}.`);
+      setHint(`Pista de Entrenador: Considera jugar ${evalRes.bestMoveSan}.`);
     }
   };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
-      {/* Top Header */}
+      {/* Header */}
       <div className="bg-[#18202c] border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-cyan-400">
             <Bot size={22} />
           </div>
           <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              Sparring con IA Adaptativa
-              {isAiThinking && (
-                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 animate-pulse font-mono">
-                  Calculando jugada...
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-extrabold text-white">
+                Sparring & Adiestramiento
+              </h2>
+              {lineName && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold flex items-center gap-1">
+                  <ShieldAlert size={12} />
+                  {lineName}
                 </span>
               )}
-            </h2>
+            </div>
             <p className="text-xs text-slate-400">
-              Practica partidas libres o posiciones de entrenamiento con nivel ajustable.
+              {lineName
+                ? 'Practica superar esta línea donde tienes mayor fuga de puntos en tus partidas reales.'
+                : 'Partida libre contra la máquina con nivel graduable y pistas en vivo.'}
             </p>
           </div>
         </div>
 
-        {/* Difficulty Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-semibold">Nivel Elo:</span>
+        <div className="flex items-center gap-3">
+          {/* Color Switcher */}
+          <div className="flex items-center bg-[#0f141c] p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+            <button
+              onClick={() => setPlayerColor('white')}
+              className={`px-3 py-1 rounded-lg transition ${
+                playerColor === 'white' ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Blancas
+            </button>
+            <button
+              onClick={() => setPlayerColor('black')}
+              className={`px-3 py-1 rounded-lg transition ${
+                playerColor === 'black' ? 'bg-slate-700 text-white font-bold' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Negras
+            </button>
+          </div>
+
+          {/* Difficulty */}
           <select
             value={difficulty}
             onChange={(e) => setDifficulty(Number(e.target.value))}
             className="bg-[#0f141c] border border-slate-700 text-xs font-bold text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-500"
           >
             <option value={500}>Principiante (500 Elo)</option>
-            <option value={800}>Casual (800 Elo)</option>
+            <option value={800}>Nivel Habitual (800 Elo)</option>
             <option value={1000}>Intermedio (1000 Elo)</option>
             <option value={1200}>Club (1200 Elo)</option>
-            <option value={1500}>Avanzado (1500 Elo)</option>
           </select>
         </div>
       </div>
 
-      {/* Main Board & Action Grid */}
+      {/* Main Board Arena */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Board */}
         <div className="lg:col-span-7 flex flex-col items-center">
           <div className="w-full max-w-[480px] aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-[#222c3c] bg-[#121824]">
             <Chessboard
               options={{
                 position: fen,
                 boardOrientation: playerColor,
-                onPieceDrop: ({ sourceSquare, targetSquare }) => targetSquare ? onPieceDrop(sourceSquare, targetSquare) : false,
+                onPieceDrop: ({ sourceSquare, targetSquare }) =>
+                  targetSquare ? onPieceDrop(sourceSquare, targetSquare) : false,
                 darkSquareStyle: { backgroundColor: '#648a56' },
                 lightSquareStyle: { backgroundColor: '#ece9d8' },
                 boardStyle: { borderRadius: '12px' },
@@ -219,13 +260,19 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
           </div>
         </div>
 
-        {/* Game State Panel */}
+        {/* Status / Coach Column */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-[#18202c] border border-slate-800 rounded-2xl p-5 space-y-3">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Swords size={16} className="text-emerald-400" />
-              Estado de la Partida
+              Estado del Adiestramiento
             </h3>
+
+            {isAiThinking && (
+              <div className="p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-xl text-cyan-300 text-xs font-mono animate-pulse">
+                La máquina está calculando su respuesta en tu rango de Elo...
+              </div>
+            )}
 
             {gameStatus ? (
               <div className="p-4 bg-emerald-950/60 border border-emerald-500/50 rounded-xl text-emerald-200 text-sm font-bold text-center">
@@ -233,11 +280,11 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
               </div>
             ) : (
               <p className="text-xs text-slate-300">
-                Turno de:{' '}
+                Turno:{' '}
                 <strong className="text-white capitalize">
                   {game.turn() === 'w' ? 'Blancas' : 'Negras'}
                 </strong>{' '}
-                {isPlayerTurn ? '(Tu Turno)' : '(IA pensando...)'}
+                {isPlayerTurn ? '(Tu Turno)' : '(Turno del rival)'}
               </p>
             )}
 
@@ -245,9 +292,20 @@ export const PlayVsAiView: React.FC<PlayVsAiViewProps> = ({ initialFen }) => {
               <div className="p-3 bg-cyan-950/40 border border-cyan-800/50 rounded-xl text-xs text-cyan-200 space-y-1">
                 <p className="font-bold flex items-center gap-1.5">
                   <Sparkles size={14} className="text-cyan-400" />
-                  Consejo de Stockfish:
+                  Consejo de Apertura:
                 </p>
                 <p>{hint}</p>
+              </div>
+            )}
+
+            {lineName && onClearLine && (
+              <div className="pt-2">
+                <button
+                  onClick={onClearLine}
+                  className="w-full py-2 bg-[#0f141c] hover:bg-slate-800 text-slate-400 text-xs rounded-xl border border-slate-800 transition"
+                >
+                  Volver a posición inicial estándar
+                </button>
               </div>
             )}
           </div>

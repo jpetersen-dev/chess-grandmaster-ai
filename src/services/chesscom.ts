@@ -96,11 +96,37 @@ export async function fetchGamesFromArchive(archiveUrl: string, targetUsername: 
     });
   }
 
-  return parsedGames.reverse(); // Most recent first
+  return parsedGames.reverse();
+}
+
+export async function fetchRecentGames(
+  username: string,
+  monthsCount = 4,
+  onProgress?: (loaded: number, totalMonths: number) => void
+): Promise<ChessComGame[]> {
+  const archives = await fetchUserArchives(username);
+  if (archives.length === 0) return [];
+
+  const targetArchives = archives.slice(-monthsCount);
+  const allGames: ChessComGame[] = [];
+
+  for (let i = 0; i < targetArchives.length; i++) {
+    const archUrl = targetArchives[i];
+    try {
+      const games = await fetchGamesFromArchive(archUrl, username);
+      allGames.push(...games);
+    } catch {
+      // ignore single archive error
+    }
+    if (onProgress) {
+      onProgress(i + 1, targetArchives.length);
+    }
+  }
+
+  return allGames;
 }
 
 function parseClockString(clkStr: string): number {
-  // Example: "0:01:54.8" or "0:02:00"
   const parts = clkStr.split(':');
   if (parts.length === 3) {
     const hours = parseFloat(parts[0]);
@@ -116,8 +142,6 @@ export function parsePgnMoves(pgn: string): ParsedMove[] {
   const chess = new Chess();
   const moves: ParsedMove[] = [];
 
-  // Match token pairs: move notation + optional {[%clk ...]}
-  // e.g. "1. e4 {[%clk 0:02:00.1]} 1... c5 {[%clk 0:01:59.4]}"
   const moveRegex = /(?:(\d+)\.+)?\s*([a-zA-Z0-9#+=\-O]+)(?:\s*\{[^}]*\[%clk\s+([0-9:.]+)\][^}]*\})?/g;
 
   let match;
@@ -126,7 +150,6 @@ export function parsePgnMoves(pgn: string): ParsedMove[] {
   let lastClockBlack: number | null = null;
   let ply = 0;
 
-  // Extract only the move text part (after headers)
   const headerEndIdx = pgn.lastIndexOf(']\n\n');
   const moveText = headerEndIdx !== -1 ? pgn.substring(headerEndIdx + 3) : pgn;
 
@@ -176,7 +199,6 @@ export function parsePgnMoves(pgn: string): ParsedMove[] {
         timeSpentSeconds,
       });
     } catch {
-      // End of valid moves or non-standard notation
       break;
     }
   }
