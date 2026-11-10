@@ -5,7 +5,7 @@ import { DashboardView } from './components/DashboardView';
 import { GameInspectorView } from './components/GameInspectorView';
 import { DojoView } from './components/DojoView';
 import { RepertoireExplorerView } from './components/RepertoireExplorerView';
-import { PlayVsAiView } from './components/PlayVsAiView';
+import { LossRevengeTrainer } from './components/LossRevengeTrainer';
 import { SettingsModal } from './components/SettingsModal';
 import type { ChessComProfile, ChessComGame } from './types/chess';
 import {
@@ -109,7 +109,7 @@ export function App() {
         </div>
       )}
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 pb-[max(env(safe-area-inset-bottom,0px),2.5rem)]">
         {activeTab === 'repertoire' && (
           <RepertoireExplorerView
             games={games}
@@ -134,6 +134,7 @@ export function App() {
             game={selectedGame}
             onBack={() => setActiveTab('repertoire')}
             onGoToDojo={() => setActiveTab('dojo')}
+            onLaunchRevenge={(fen, color, name) => handleLaunchSparring(fen, color, name)}
           />
         )}
 
@@ -148,11 +149,13 @@ export function App() {
         )}
 
         {activeTab === 'sparring' && (
-          <PlayVsAiView
+          <LossRevengeTrainer
+            games={games}
             initialFen={sparringFen}
             initialColor={sparringColor}
             lineName={sparringLineName}
-            onClearLine={handleClearSparringLine}
+            onClearCustomLine={handleClearSparringLine}
+            onInspectGame={handleSelectGame}
           />
         )}
       </main>

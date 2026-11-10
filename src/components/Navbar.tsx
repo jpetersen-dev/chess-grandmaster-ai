@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Crosshair, BrainCircuit, Bot, Settings, RefreshCw, Zap, Shield, Flame, GitFork } from 'lucide-react';
+import { LayoutDashboard, Crosshair, BrainCircuit, Settings, RefreshCw, Zap, Shield, Flame, GitFork, Swords } from 'lucide-react';
 import type { ChessComProfile } from '../types/chess';
 
 export type ActiveTab = 'repertoire' | 'dashboard' | 'inspector' | 'dojo' | 'sparring';
@@ -24,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   duePuzzlesCount,
 }) => {
   return (
-    <header className="sticky top-0 z-40 bg-[#121824]/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-2.5 transition">
+    <header className="sticky top-0 z-40 bg-[#121824]/95 backdrop-blur-md border-b border-slate-800/80 px-4 pt-[max(env(safe-area-inset-top,0px),0.75rem)] pb-2.5 transition">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Brand & User Profile */}
         <div className="flex items-center justify-between w-full md:w-auto gap-4">
@@ -146,8 +146,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <Bot size={14} />
-            <span>Adiestramiento</span>
+            <Swords size={14} />
+            <span>Revancha & IA</span>
           </button>
         </nav>
 

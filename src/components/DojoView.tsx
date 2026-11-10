@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
+import type { Square } from 'chess.js';
 import confetti from 'canvas-confetti';
 import {
   Brain,
@@ -38,6 +39,8 @@ export const DojoView: React.FC<DojoViewProps> = ({ games }) => {
   const [status, setStatus] = useState<'idle' | 'success' | 'failed'>('idle');
   const [hintVisible, setHintVisible] = useState<boolean>(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState<boolean>(false);
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
+  const [legalTargetSquares, setLegalTargetSquares] = useState<Square[]>([]);
 
   // Load puzzles on mount
   useEffect(() => {
@@ -111,22 +114,25 @@ export const DojoView: React.FC<DojoViewProps> = ({ games }) => {
     soundService.playSuccess();
   };
 
-  // Handle piece drop on chessboard
-  const onPieceDrop = (sourceSquare: string, targetSquare: string): boolean => {
+  // Execute move (handles both click-to-move and drag-and-drop)
+  const executeMove = (from: Square, to: Square): boolean => {
     if (!currentPuzzle || status === 'success') return false;
 
     const chess = new Chess(boardPosition);
     try {
       const move = chess.move({
-        from: sourceSquare,
-        to: targetSquare,
+        from,
+        to,
         promotion: 'q',
       });
 
       if (!move) return false;
 
+      setSelectedSquare(null);
+      setLegalTargetSquares([]);
+
       // Check if move matches bestMoveSan or UCI
-      const playedUci = `${sourceSquare}${targetSquare}`;
+      const playedUci = `${from}${to}`;
       const isCorrect =
         move.san === currentPuzzle.bestMoveSan ||
         playedUci === currentPuzzle.bestMoveUci ||
@@ -153,6 +159,73 @@ export const DojoView: React.FC<DojoViewProps> = ({ games }) => {
       return false;
     }
   };
+
+  const onPieceDrop = (sourceSquare: string, targetSquare: string): boolean => {
+    return executeMove(sourceSquare as Square, targetSquare as Square);
+  };
+
+  // Click-to-move handler
+  const onSquareClick = (square: Square) => {
+    if (!currentPuzzle || status === 'success') return;
+
+    if (selectedSquare) {
+      if (selectedSquare === square) {
+        setSelectedSquare(null);
+        setLegalTargetSquares([]);
+        return;
+      }
+
+      if (legalTargetSquares.includes(square)) {
+        executeMove(selectedSquare, square);
+        return;
+      }
+    }
+
+    const chess = new Chess(boardPosition);
+    const piece = chess.get(square);
+    const userTurn = currentPuzzle.userColor;
+
+    if (piece && piece.color === userTurn && piece.color === chess.turn()) {
+      setSelectedSquare(square);
+      const legalMoves = chess.moves({ square, verbose: true });
+      setLegalTargetSquares(legalMoves.map((m) => m.to as Square));
+    } else {
+      setSelectedSquare(null);
+      setLegalTargetSquares([]);
+    }
+  };
+
+  // Custom square styles for legal dots & selection highlight
+  const customSquareStyles = useMemo(() => {
+    const styles: Record<string, React.CSSProperties> = {};
+    if (!currentPuzzle) return styles;
+
+    const chess = new Chess(boardPosition);
+
+    if (selectedSquare) {
+      styles[selectedSquare] = {
+        backgroundColor: 'rgba(245, 158, 11, 0.45)',
+        borderRadius: '6px',
+      };
+    }
+
+    for (const target of legalTargetSquares) {
+      const pieceOnTarget = chess.get(target);
+      if (pieceOnTarget) {
+        styles[target] = {
+          background: 'radial-gradient(circle, transparent 60%, rgba(239, 68, 68, 0.8) 65%)',
+          borderRadius: '50%',
+        };
+      } else {
+        styles[target] = {
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.85) 26%, transparent 27%)',
+          borderRadius: '50%',
+        };
+      }
+    }
+
+    return styles;
+  }, [selectedSquare, legalTargetSquares, boardPosition, currentPuzzle]);
 
   const handleNextPuzzle = () => {
     const nextIdx = (currentIndex + 1) % puzzles.length;
@@ -262,7 +335,9 @@ export const DojoView: React.FC<DojoViewProps> = ({ games }) => {
               options={{
                 position: boardPosition,
                 boardOrientation: currentPuzzle.userColor === 'w' ? 'white' : 'black',
-                onPieceDrop: ({ sourceSquare, targetSquare }) => targetSquare ? onPieceDrop(sourceSquare, targetSquare) : false,
+                onPieceDrop: ({ sourceSquare, targetSquare }) => (targetSquare ? onPieceDrop(sourceSquare, targetSquare) : false),
+                onSquareClick: ({ square }) => onSquareClick(square as Square),
+                squareStyles: customSquareStyles,
                 darkSquareStyle: { backgroundColor: '#648a56' },
                 lightSquareStyle: { backgroundColor: '#ece9d8' },
                 boardStyle: { borderRadius: '12px' },
@@ -270,8 +345,8 @@ export const DojoView: React.FC<DojoViewProps> = ({ games }) => {
             />
           </div>
 
-          <p className="text-xs text-slate-400 mt-3 font-medium">
-            Juegan las {currentPuzzle.userColor === 'w' ? 'Blancas' : 'Negras'}. Arrastra la mejor pieza.
+          <p className="text-xs text-slate-400 mt-3 font-medium text-center">
+            Juegan las {currentPuzzle.userColor === 'w' ? 'Blancas' : 'Negras'}. 💡 <strong>Toca o arrastra</strong> una pieza para ver sus casillas posibles y mover.
           </p>
         </div>
 

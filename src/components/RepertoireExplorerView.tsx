@@ -325,34 +325,51 @@ export const RepertoireExplorerView: React.FC<RepertoireExplorerViewProps> = ({
             </div>
 
             {/* Current Position Snapshot */}
-            <div className="p-3 bg-[#0f141c] rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <div className="p-3 bg-[#0f141c] rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div>
                 <p className="text-slate-400 text-[11px]">Posición Actual:</p>
                 <p className="font-extrabold text-white font-mono text-sm">
                   {activeRoot.san ? `${activeRoot.moveNumber}. ${activeRoot.san}` : currentPillar.rootMoves.join(' ')}
                 </p>
               </div>
-              <div className="flex items-center gap-3 font-mono text-xs">
-                <div>
-                  <span className="text-slate-400">Total: </span>
-                  <span className="font-bold text-white">{activeRoot.totalGames}</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <div>
+                    <span className="text-slate-400">Total: </span>
+                    <span className="font-bold text-white">{activeRoot.totalGames}</span>
+                  </div>
+                  <div>
+                    <span className="text-emerald-400 font-bold">{activeRoot.wins}V</span>
+                    <span className="text-slate-500"> / </span>
+                    <span className="text-rose-400 font-bold">{activeRoot.losses}D</span>
+                  </div>
+                  <div
+                    className={`font-black px-2 py-0.5 rounded text-xs ${
+                      activeRoot.winRate >= 52
+                        ? 'bg-emerald-950 text-emerald-400'
+                        : activeRoot.winRate >= 48
+                        ? 'bg-amber-950 text-amber-400'
+                        : 'bg-rose-950 text-rose-400'
+                    }`}
+                  >
+                    {activeRoot.winRate}%
+                  </div>
                 </div>
-                <div>
-                  <span className="text-emerald-400 font-bold">{activeRoot.wins}V</span>
-                  <span className="text-slate-500"> / </span>
-                  <span className="text-rose-400 font-bold">{activeRoot.losses}D</span>
-                </div>
-                <div
-                  className={`font-black px-2 py-0.5 rounded text-xs ${
-                    activeRoot.winRate >= 52
-                      ? 'bg-emerald-950 text-emerald-400'
-                      : activeRoot.winRate >= 48
-                      ? 'bg-amber-950 text-amber-400'
-                      : 'bg-rose-950 text-rose-400'
-                  }`}
+
+                <button
+                  onClick={() =>
+                    onLaunchSparringLine(
+                      activeRoot.fen,
+                      currentPillar.perspectiveColor,
+                      activeRoot.name || `Línea ${activeRoot.san || currentPillar.title}`
+                    )
+                  }
+                  className="px-2.5 py-1.5 bg-rose-600/90 hover:bg-rose-600 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-rose-950/40 shrink-0"
+                  title="Jugar revancha contra Stockfish 19 desde esta posición"
                 >
-                  {activeRoot.winRate}%
-                </div>
+                  <Swords size={12} />
+                  <span>Revancha con IA</span>
+                </button>
               </div>
             </div>
 

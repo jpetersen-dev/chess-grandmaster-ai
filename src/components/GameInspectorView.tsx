@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Brain,
   Zap,
+  Swords,
 } from 'lucide-react';
 import type { ChessComGame, ParsedMove } from '../types/chess';
 import { parsePgnMoves } from '../services/chesscom';
@@ -27,12 +28,14 @@ interface GameInspectorViewProps {
   game: ChessComGame;
   onBack: () => void;
   onGoToDojo: () => void;
+  onLaunchRevenge?: (fen: string, playerColor: 'white' | 'black', lineName: string) => void;
 }
 
 export const GameInspectorView: React.FC<GameInspectorViewProps> = ({
   game,
   onBack,
   onGoToDojo,
+  onLaunchRevenge,
 }) => {
   const [moves, setMoves] = useState<ParsedMove[]>([]);
   const [currentPly, setCurrentPly] = useState<number>(0);
@@ -40,6 +43,8 @@ export const GameInspectorView: React.FC<GameInspectorViewProps> = ({
   const [geminiAdvice, setGeminiAdvice] = useState<string>('');
   const [dojoAdded, setDojoAdded] = useState<boolean>(false);
   const [orientation, setOrientation] = useState<'white' | 'black'>(game.userColor);
+
+  const opponent = game.userColor === 'white' ? game.black : game.white;
 
   // 1. Parse game moves on load
   useEffect(() => {
@@ -392,13 +397,13 @@ export const GameInspectorView: React.FC<GameInspectorViewProps> = ({
                 )}
               </div>
 
-              {/* Add to Dojo Button */}
+              {/* Action Buttons: Add to Dojo & Launch Revenge */}
               {currentMove.color === userTurn && (
-                <div className="pt-2">
+                <div className="pt-2 flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={handleAddToDojo}
                     disabled={dojoAdded}
-                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition ${
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition ${
                       dojoAdded
                         ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/50'
                         : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950'
@@ -407,15 +412,31 @@ export const GameInspectorView: React.FC<GameInspectorViewProps> = ({
                     {dojoAdded ? (
                       <>
                         <CheckCircle2 size={16} />
-                        <span>¡Guardado en tu Dojo de Repaso!</span>
+                        <span>¡Guardado en el Dojo!</span>
                       </>
                     ) : (
                       <>
                         <PlusCircle size={16} />
-                        <span>Guardar en mi Dojo (Repaso Espaciado)</span>
+                        <span>Guardar en Dojo SRS</span>
                       </>
                     )}
                   </button>
+
+                  {onLaunchRevenge && (
+                    <button
+                      onClick={() =>
+                        onLaunchRevenge(
+                          currentMove.fenBefore,
+                          game.userColor,
+                          `Revancha vs ${opponent.username} (${currentMove.san})`
+                        )
+                      }
+                      className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950 flex items-center justify-center gap-2 transition"
+                    >
+                      <Swords size={16} />
+                      <span>Jugar Revancha con Stockfish 19</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
